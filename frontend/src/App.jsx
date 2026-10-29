@@ -11,6 +11,7 @@ import BlogList from './features/posts/BlogList.jsx';
 import BlogReader from './features/posts/BlogReader.jsx';
 import PostEditor from './features/posts/PostEditor.jsx';
 import Users from './features/admin/Users.jsx';
+import Dashboard from './features/admin/Dashboard.jsx';
 
 /** Render identity routes and guards; unfinished feature destinations safely return to root.
  * @returns {JSX.Element} The identity application shell.
@@ -73,7 +74,7 @@ export default function App() {
           } />
           <Route path="/admin" element={
             <ProtectedRoute session={session} role="admin">
-              <Navigate to="/" replace />
+              <Dashboard />
             </ProtectedRoute>
           } />
           <Route path="*" element={
