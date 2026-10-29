@@ -7,6 +7,9 @@ import Login from './features/identity/Login.jsx';
 import Register from './features/identity/Register.jsx';
 import { getSession } from './features/identity/auth.js';
 import Landing from './features/discovery/Landing.jsx';
+import BlogList from './features/posts/BlogList.jsx';
+import BlogReader from './features/posts/BlogReader.jsx';
+import PostEditor from './features/posts/PostEditor.jsx';
 
 /** Render identity routes and guards; unfinished feature destinations safely return to root.
  * @returns {JSX.Element} The identity application shell.
@@ -45,10 +48,20 @@ export default function App() {
           <Route path="/register" element={
             <Register session={session} onSessionChange={setSessionState} />
           } />
-          {['/blogs', '/blog/:id', '/write', '/edit/:id'].map(path => (
+          <Route path="/blogs" element={
+            <ProtectedRoute session={session}>
+              <BlogList session={session} />
+            </ProtectedRoute>
+          } />
+          <Route path="/blog/:id" element={
+            <ProtectedRoute session={session}>
+              <BlogReader session={session} />
+            </ProtectedRoute>
+          } />
+          {['/write', '/edit/:id'].map(path => (
             <Route key={path} path={path} element={
               <ProtectedRoute session={session}>
-                <Navigate to="/" replace />
+                <PostEditor session={session} mode={path === '/write' ? 'create' : 'edit'} />
               </ProtectedRoute>
             } />
           ))}
