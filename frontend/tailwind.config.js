@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       keyframes: { float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } } },
-      animation: { float: 'float 5s ease-in-out infinite' },
+      animation: { float: 'float 5s ease-in-out 1' },
       fontFamily: { display: ['Georgia', 'serif'], sans: ['Arial', 'Helvetica', 'sans-serif'] },
     },
   },

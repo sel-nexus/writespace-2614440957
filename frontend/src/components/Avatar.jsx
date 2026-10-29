@@ -10,7 +10,11 @@ export function Avatar({ role = 'user', size = 'md' }) {
   const roles = { admin: { color: 'bg-violet-600', emoji: '👑', label: 'Admin avatar' }, user: { color: 'bg-indigo-500', emoji: '📖', label: 'User avatar' } };
   const avatar = roles[role] ?? roles.user;
   return (
-    <span role="img" aria-label={avatar.label} className={`inline-flex shrink-0 items-center justify-center rounded-full ${avatar.color} ${sizes[size] ?? sizes.md}`}>
+    <span
+      role="img"
+      aria-label={avatar.label}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full ${avatar.color} ${sizes[size] ?? sizes.md}`}
+    >
       {avatar.emoji}
     </span>
   );

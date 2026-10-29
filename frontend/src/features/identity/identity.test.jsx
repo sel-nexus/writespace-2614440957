@@ -325,8 +325,9 @@ describe('app state wiring', () => {
   it('uses actual guest links and preserves identity across remount and logout', async () => {
     const user = userEvent.setup();
     const view = mount(<App />);
-    await user.click(screen.getByRole('link', { name: 'Login to WriteSpace' }));
-    await user.click(screen.getByRole('link', { name: 'Register', exact: true }));
+    await user.click(within(screen.getByRole('navigation', { name: 'Main navigation' }))
+      .getByRole('link', { name: 'Login', exact: true }));
+    await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'Register', exact: true }));
     await fillRegistration(user);
     await user.click(screen.getByRole('button', { name: 'Register' }));
     expect(screen.getByRole('button', { name: /Writer.*Account options/ })).toBeInTheDocument();
@@ -351,9 +352,12 @@ describe('app state wiring', () => {
     expect(screen.getByRole('button', { name: /Account options/ })).toBeInTheDocument();
   });
 
-  it('returns unknown routes to the temporary root without fake destination pages', () => {
+  it('returns unknown routes to the actual public landing page', () => {
     mount(<App />, '/unknown');
     expect(screen.getByLabelText('Current route').textContent).toBe('/');
-    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Login to WriteSpace' })).toBeInTheDocument();
+    const main = within(screen.getByRole('main'));
+    expect(main.getByRole('heading', { name: 'WriteSpace', exact: true, level: 1 })).toBeInTheDocument();
+    expect(main.getByRole('link', { name: 'Start Reading', exact: true })).toHaveAttribute('href', '/login');
+    expect(main.getByRole('link', { name: 'Get Started Free', exact: true })).toHaveAttribute('href', '/register');
   });
 });

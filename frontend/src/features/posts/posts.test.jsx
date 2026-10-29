@@ -169,6 +169,75 @@ it('creates through the form with associated required errors, live counter and r
   expect(getPosts()[1]).toMatchObject({ title: 'New publication', content: 'New text', authorId: 'writer', authorName: 'Writer' });
 });
 
+it('creates and edits large text with exact counters, storage roundtrips and unabridged reader text', async () => {
+  const user = userEvent.setup();
+  const title = `Title ${'long '.repeat(600)}End`;
+  const content = `Opening\n\n  ${'Large café 🚀 paragraph\n  '.repeat(2400)}Closing`;
+  const { container } = renderPosts('/write');
+  // Paste exercises the input handler without thousands of simulated keystrokes.
+  await user.click(screen.getByLabelText('Title'));
+  await user.paste(title);
+  await user.click(screen.getByLabelText('Content'));
+  await user.paste(content);
+  expect(screen.getByLabelText('Title')).toHaveValue(title);
+  expect(screen.getByLabelText('Content')).toHaveValue(content);
+  expect(screen.getByText(`${content.length} characters`)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  const created = getPosts()[1];
+  expect(created).toMatchObject({ title, content });
+  expect(JSON.parse(localStorage.getItem(POSTS_KEY))).toEqual([post, created]);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(title);
+  expect(container.querySelector('p.whitespace-pre-wrap').textContent).toBe(content);
+
+  await user.click(screen.getByRole('link', { name: 'Edit', exact: true }));
+  expect(screen.getByLabelText('Title')).toHaveValue(title);
+  expect(screen.getByLabelText('Content')).toHaveValue(content);
+  expect(screen.getByText(`${content.length} characters`)).toBeInTheDocument();
+  const updatedTitle = `Revised ${title}`;
+  const updatedContent = `${content}\n\n  ${'Revision text\n'.repeat(1000)}End`;
+  await user.clear(screen.getByLabelText('Title'));
+  await user.paste(updatedTitle);
+  await user.clear(screen.getByLabelText('Content'));
+  await user.paste(updatedContent);
+  expect(screen.getByText(`${updatedContent.length} characters`)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  const updated = { ...created, title: updatedTitle, content: updatedContent };
+  expect(getPosts()).toEqual([post, updated]);
+  expect(JSON.parse(localStorage.getItem(POSTS_KEY))).toEqual([post, updated]);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(updatedTitle);
+  expect(container.querySelector('p.whitespace-pre-wrap').textContent).toBe(updatedContent);
+});
+
+it.each(['create', 'edit'])('retains large %s drafts and prior storage when the serialized write exceeds quota', async mode => {
+  const user = userEvent.setup();
+  renderPosts(mode === 'edit' ? '/edit/one' : '/write');
+  const title = 'Large draft';
+  const content = `First\n\n  ${'Large draft paragraph\n'.repeat(1200)}Last`;
+  await user.clear(screen.getByLabelText('Title'));
+  await user.paste(title);
+  await user.clear(screen.getByLabelText('Content'));
+  await user.paste(content);
+  const before = localStorage.getItem(POSTS_KEY);
+  const threshold = 8192;
+  expect(before.length).toBeLessThan(threshold);
+  expect(content.length).toBeGreaterThan(threshold);
+  const write = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+    if (key === POSTS_KEY && value.length > threshold) {
+      throw new DOMException('Injected storage quota exceeded', 'QuotaExceededError');
+    }
+    return write.call(this, key, value);
+  });
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByRole('alert')).toHaveTextContent('Cannot save local posts. Enable browser storage and check available space.');
+  expect(screen.getByRole('heading', { name: mode === 'edit' ? 'Edit Post' : 'Write a Post' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Title')).toHaveValue(title);
+  expect(screen.getByLabelText('Content')).toHaveValue(content);
+  expect(screen.getByText(`${content.length} characters`)).toBeInTheDocument();
+  expect(localStorage.getItem(POSTS_KEY)).toBe(before);
+  expect(getPosts()).toEqual([post]);
+});
+
 it.each(['create', 'edit'])('cancels %s without saving changed form fields', async mode => {
   const user = userEvent.setup();
   renderPosts(mode === 'edit' ? '/edit/one' : '/write');

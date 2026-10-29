@@ -18,6 +18,24 @@ beforeEach(() => {
 });
 
 describe('post lifecycle', () => {
+  it('roundtrips large title and multiline content on create and update without truncating text or metadata', () => {
+    // Bounded stress fixtures, not product input limits.
+    const title = `Start ${'long title '.repeat(400)}End`;
+    const content = `First\n\n  ${'Paragraph café 🚀\n  '.repeat(4000)}Last`;
+    const created = createPost({ title: ` ${title} `, content: `\n${content}\n` });
+    expect(created).toMatchObject({ title, content, authorId: user.id, authorName: user.displayName });
+    expect(JSON.parse(localStorage.getItem(POSTS_KEY))).toEqual([original, created]);
+    expect(getPost(created.id)).toEqual(created);
+
+    const updatedTitle = `Updated ${title}`;
+    const updatedContent = `${content}\n\n  Final revision`;
+    const updated = updatePost(created.id, { title: updatedTitle, content: updatedContent });
+    expect(updated).toEqual({ ...created, title: updatedTitle, content: updatedContent });
+    expect(JSON.parse(localStorage.getItem(POSTS_KEY))).toEqual([original, updated]);
+    expect(getPosts()).toEqual([original, updated]);
+    expect(getPost(created.id)).toEqual(updated);
+  });
+
   it('creates trimmed text with UUID, current creation time and canonical attribution, ignoring supplied metadata', () => {
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('new-post');
     const before = Date.now();
@@ -135,6 +153,28 @@ describe('authorization and missing resources', () => {
 });
 
 describe('failure preservation', () => {
+  it.each(['create', 'update'])('preserves prior posts when a large %s crosses an injected storage quota', mode => {
+    const threshold = 8192;
+    const write = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === POSTS_KEY && value.length > threshold) {
+        throw new DOMException('Injected storage quota exceeded', 'QuotaExceededError');
+      }
+      return write.call(this, key, value);
+    });
+    const small = createPost({ title: 'Below quota', content: 'Small text' });
+    expect(getPost(small.id)).toEqual(small);
+    const before = localStorage.getItem(POSTS_KEY);
+    expect(before.length).toBeLessThan(threshold);
+    const fields = { title: 'Large publication', content: 'large paragraph\n'.repeat(2000) };
+    expect(fields.content.length).toBeGreaterThan(threshold);
+    const action = () => mode === 'create' ? createPost(fields) : updatePost('post', fields);
+    expect(action).toThrow('Cannot save local posts. Enable browser storage and check available space.');
+    expect(localStorage.getItem(POSTS_KEY)).toBe(before);
+    expect(getPosts()).toEqual([original, small]);
+    expect(getPost('post')).toEqual(original);
+  });
+
   it.each(['{bad', '{}', '[{}]'])('refuses to overwrite corrupt post storage: %s', raw => {
     localStorage.setItem(POSTS_KEY, raw);
     for (const action of [() => createPost({ title: 'New', content: 'Text' }),

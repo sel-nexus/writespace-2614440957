@@ -9,15 +9,16 @@ async function openNavigation(page) {
 
 /** Return through the logo and existing public dashboard link rather than teleporting. */
 async function dashboard(page) {
-  await page.getByRole('navigation').getByRole('link', { name: 'WriteSpace', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'WriteSpace', exact: true }).click();
   await openNavigation(page);
-  await page.getByRole('navigation').getByRole('link', { name: 'Go to Dashboard' }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Go to Dashboard' }).click();
   await expect(page).toHaveURL(/\/admin$/);
 }
 
 /** Sign in as the built-in admin using the public login link and real form. */
 async function loginAdmin(page) {
-  await page.getByRole('link', { name: 'Login to WriteSpace' }).click();
+  await openNavigation(page);
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Login', exact: true }).click();
   await page.getByLabel('Username', { exact: true }).fill('admin');
   await page.getByLabel('Password', { exact: true }).fill('admin');
   await page.getByRole('button', { name: 'Login', exact: true }).click();

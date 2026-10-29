@@ -11,7 +11,7 @@ const accents = ['border-t-indigo-600', 'border-t-violet-600', 'border-t-pink-50
 /** Render one preview with separate reading and permitted editing links.
  * @param {object} props Post, optional session, and zero-based accent index.
  * @returns {JSX.Element|null} An accessible card, or nothing for an invalid record.
- * Notes: Edit visibility is demo UI permission, not authorization for a future mutation service.
+ * Notes: Edit visibility is demo UI permission, not authorization for the mutation service.
  */
 export function BlogCard({ post, session = null, index = 0 }) {
   if (!isValidPost(post)) return null;
@@ -22,11 +22,16 @@ export function BlogCard({ post, session = null, index = 0 }) {
   const destination = encodeURIComponent(post.id);
 
   return (
-    <article className={`flex h-full min-w-0 flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 ${accents[index % 4]}`}>
+    <article
+      className={`flex h-full min-w-0 flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 ${accents[index % 4]}`}
+    >
       <time dateTime={post.createdAt} className="text-sm text-slate-600">
         {formatPostDate(post.createdAt)}
       </time>
-      <Link to={`/blog/${destination}`} className="mt-3 block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+      <Link
+        to={`/blog/${destination}`}
+        className="mt-3 block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      >
         <h3 className="break-words font-display text-2xl font-bold leading-tight text-slate-900 hover:text-indigo-700">
           {post.title}
         </h3>

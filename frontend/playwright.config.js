@@ -11,7 +11,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],
   webServer: {
-    command: 'node node_modules/vite/bin/vite.js',
+    command: `node node_modules/vite/bin/vite.js preview --host ${new URL(baseURL).hostname} --port ${new URL(baseURL).port || '80'}`,
     url: baseURL,
     reuseExistingServer: true,
     timeout: 30000,

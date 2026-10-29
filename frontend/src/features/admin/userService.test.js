@@ -18,6 +18,43 @@ beforeEach(() => {
 });
 
 describe('admin account population and creation', () => {
+  it('preserves large names and exact password through account creation, listing and deletion', () => {
+    const displayName = `Writer ${'名 café '.repeat(1200)}End`;
+    const username = `writer-${'long-name-'.repeat(1000)}end`;
+    const password = `  ${'demo-only 🚀\n'.repeat(2000)}  `;
+    const session = localStorage.getItem('writespace_session');
+    const account = createUser({ displayName: ` ${displayName} `, username: ` ${username} `, password, role: 'user' });
+    expect(account).toMatchObject({ displayName, username, password, role: 'user' });
+    expect(stored()).toEqual([writer, admin, account]);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, writer, admin, account]);
+    expect(deleteUser(account.id)).toEqual(account);
+    expect(stored()).toEqual([writer, admin]);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, writer, admin]);
+    expect(localStorage.getItem('writespace_session')).toBe(session);
+  });
+
+  it('roundtrips bounded large collections while creating and deleting without losing unrelated accounts', () => {
+    // This fixture size exercises collection growth; it is not an account cap.
+    const population = Array.from({ length: 128 }, (_, index) => ({
+      ...writer, id: `bulk-${index}`, username: `bulk-${index}`, displayName: `Writer ${index}`,
+    }));
+    const existing = [writer, admin, ...population];
+    saveUsers(existing);
+    expect(stored()).toEqual(existing);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, ...existing]);
+    const created = createUser(valid);
+    expect(stored()).toEqual([...existing, created]);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, ...existing, created]);
+    const removed = population[64];
+    expect(deleteUser(removed.id)).toEqual(removed);
+    const remaining = existing.filter(account => account.id !== removed.id);
+    expect(stored()).toEqual([...remaining, created]);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, ...remaining, created]);
+    expect(deleteUser(created.id)).toEqual(created);
+    expect(stored()).toEqual(remaining);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, ...remaining]);
+  });
+
   it('includes the separate default admin exactly once and supports an absent collection', () => {
     expect(listUsers()).toEqual([DEFAULT_ADMIN, writer, admin]);
     localStorage.removeItem('writespace_users');
@@ -101,6 +138,29 @@ describe('persisted authorization on every read and mutation', () => {
 });
 
 describe('strict storage safety', () => {
+  it('rejects size-triggered account quota failures with useful feedback and unchanged prior data', () => {
+    const threshold = 8192;
+    const write = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'writespace_users' && value.length > threshold) {
+        throw new DOMException('Injected storage quota exceeded', 'QuotaExceededError');
+      }
+      return write.call(this, key, value);
+    });
+    const small = createUser(valid);
+    expect(stored()).toEqual([writer, admin, small]);
+    const before = localStorage.getItem('writespace_users');
+    const session = localStorage.getItem('writespace_session');
+    expect(before.length).toBeLessThan(threshold);
+    expect(() => createUser({ ...valid, username: 'large-writer', password: 'p'.repeat(threshold * 2) }))
+      .toThrow('Cannot save local accounts.');
+    expect(localStorage.getItem('writespace_users')).toBe(before);
+    expect(listUsers()).toEqual([DEFAULT_ADMIN, writer, admin, small]);
+    expect(localStorage.getItem('writespace_session')).toBe(session);
+    expect(deleteUser(small.id)).toEqual(small);
+    expect(stored()).toEqual([writer, admin]);
+  });
+
   it.each([
     '{', 'null', '{}', '[null]',
     JSON.stringify([{ ...writer, password: '' }]),

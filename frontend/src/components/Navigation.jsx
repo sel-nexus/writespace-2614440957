@@ -54,15 +54,33 @@ export function Navigation({ session, onSessionChange }) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm" onKeyDown={closeOnEscape}>
       <nav aria-label="Main navigation" className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <Link to="/" className="mr-auto rounded font-['Georgia'] text-2xl font-bold text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        <Link
+          to="/"
+          className="mr-auto rounded font-['Georgia'] text-2xl font-bold text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
           WriteSpace
         </Link>
-        <button id="navigation-toggle" type="button" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="navigation-links" onClick={() => setMobileOpen(!mobileOpen)} className={`${styles.ghost} sm:hidden`}>
+        <button
+          id="navigation-toggle"
+          type="button"
+          aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={mobileOpen}
+          aria-controls="navigation-links"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className={`${styles.ghost} sm:hidden`}
+        >
           {mobileOpen ? <X size={24} aria-hidden="true" /> : <List size={24} aria-hidden="true" />}
         </button>
-        <div id="navigation-links" className={`${mobileOpen ? 'flex' : 'hidden'} w-full flex-col gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center`}>
+        <div
+          id="navigation-links"
+          className={`${mobileOpen ? 'flex' : 'hidden'} w-full flex-col gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center`}
+        >
           {links.map(link => (
-            <NavLink key={link.to} to={link.to} className={({ isActive }) => `${styles.ghost} ${isActive ? 'bg-indigo-600 text-white hover:bg-indigo-700' : ''}`}>
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) => `${styles.ghost} ${isActive ? 'bg-indigo-600 text-white hover:bg-indigo-700' : ''}`}
+            >
               {link.label}
             </NavLink>
           ))}
@@ -74,7 +92,14 @@ export function Navigation({ session, onSessionChange }) {
                 </Link>
               )}
               <div className="relative">
-                <button id="account-toggle" type="button" aria-expanded={accountOpen} aria-controls="account-actions" onClick={() => setAccountOpen(!accountOpen)} className={`${styles.ghost} w-full gap-2 sm:w-auto`}>
+                <button
+                  id="account-toggle"
+                  type="button"
+                  aria-expanded={accountOpen}
+                  aria-controls="account-actions"
+                  onClick={() => setAccountOpen(!accountOpen)}
+                  className={`${styles.ghost} w-full gap-2 sm:w-auto`}
+                >
                   <Avatar role={session.role} />
                   <span className="max-w-40 truncate">
                     {session.displayName}

@@ -10,7 +10,7 @@ async function openNavigation(page) {
 /** Navigate using the authenticated Write control on either viewport. */
 async function write(page) {
   await openNavigation(page);
-  await page.getByRole('navigation').getByRole('link', { name: 'Write', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Write', exact: true }).click();
 }
 
 /** Log out through the account disclosure, leaving posts intact. */
@@ -22,7 +22,8 @@ async function logout(page) {
 
 /** Sign in through the real login form without programmatic route changes. */
 async function login(page, username, password) {
-  await page.getByRole('link', { name: 'Login to WriteSpace' }).click();
+  await openNavigation(page);
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Login', exact: true }).click();
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Login', exact: true }).click();
@@ -123,7 +124,7 @@ test('another author cannot manage a post, while admin can moderate without rewr
   await logout(page);
   await login(page, 'admin', 'admin');
   await openNavigation(page);
-  await page.getByRole('navigation').getByRole('link', { name: 'All Blogs' }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'All Blogs' }).click();
   await page.getByRole('link', { name: 'Edit Owned publication' }).click();
   await page.getByLabel('Title').fill('Admin moderated');
   await page.getByRole('button', { name: 'Save' }).click();
@@ -141,6 +142,27 @@ test('another author cannot manage a post, while admin can moderate without rewr
 const seededAccount = { id: 'reader', username: 'reader', displayName: 'Reader', password: 'demo', role: 'user', createdAt: '2025-01-01' };
 const seededPost = { id: 'foreign', title: 'Another writer', content: 'Read only', authorId: 'removed', authorName: 'Historical author',
   createdAt: '2025-01-01', authorRole: 'user' };
+
+test('All Blogs main Write link opens an empty editor without publishing', async ({ page }) => {
+  await page.addInitScript(({ account, post }) => {
+    localStorage.setItem('writespace_users', JSON.stringify([account]));
+    localStorage.setItem('writespace_session', JSON.stringify({ userId: account.id, username: account.username,
+      displayName: account.displayName, role: account.role }));
+    localStorage.setItem('writespace_posts', JSON.stringify([post]));
+  }, { account: seededAccount, post: seededPost });
+  await page.goto('/blogs');
+  const main = page.getByRole('main');
+  await expect(main.getByRole('heading', { name: 'All Blogs', exact: true, level: 1 })).toBeVisible();
+  await expect(main.getByRole('heading', { name: seededPost.title, exact: true })).toBeVisible();
+  await main.getByRole('link', { name: 'Write', exact: true }).click();
+  await expect(page).toHaveURL(/\/write$/);
+  await expect(main.getByLabel('Title', { exact: true })).toBeVisible();
+  await expect(main.getByLabel('Title', { exact: true })).toHaveValue('');
+  await expect(main.getByLabel('Content', { exact: true })).toBeVisible();
+  await expect(main.getByLabel('Content', { exact: true })).toHaveValue('');
+  await expect(main.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+  expect(await storedPosts(page)).toEqual([seededPost]);
+});
 
 test('direct unauthorized edit redirects to blogs without a write', async ({ page }) => {
   await page.addInitScript(({ account, post }) => {

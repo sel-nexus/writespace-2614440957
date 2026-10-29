@@ -20,6 +20,26 @@ describe('account storage', () => {
     expect(JSON.parse(localStorage.getItem('writespace_users'))).toEqual([writer, admin]);
   });
 
+  it('roundtrips a bounded large collection without losing records or exact passwords', () => {
+    const accounts = Array.from({ length: 500 }, (_, index) => ({
+      ...writer,
+      id: `writer-${index}`,
+      username: `writer${index}`,
+      displayName: `Writer ${index}`,
+      password: ` demo ${index} `,
+      role: index % 2 === 0 ? 'user' : 'admin',
+    }));
+    saveUsers(accounts);
+    expect(JSON.parse(localStorage.getItem('writespace_users'))).toEqual(accounts);
+    expect(getUsers()).toEqual(accounts);
+    const current = register({ ...fields, username: 'new-writer' });
+    expect(getUsers().slice(0, accounts.length)).toEqual(accounts);
+    expect(getUsers()).toHaveLength(accounts.length + 1);
+    clearSession();
+    expect(login(accounts[499].username, accounts[499].password).userId).toBe(accounts[499].id);
+    expect(login('new-writer', fields.password)).toEqual(current);
+  });
+
   it.each(['broken json', '{}', 'null', '42'])('returns an empty collection for corrupt storage %s', raw => {
     localStorage.setItem('writespace_users', raw);
     expect(getUsers()).toEqual([]);
@@ -155,6 +175,22 @@ describe('registration', () => {
     expect(login('writer', ' demo ')).toEqual(current);
   });
 
+  it('registers bounded large fields without truncation and keeps the exact password on login', () => {
+    const displayName = 'Writer'.repeat(1000);
+    const username = 'writer'.repeat(1000);
+    const password = ` ${'demo'.repeat(2000)} `;
+    const current = register({ displayName: ` ${displayName} `, username: ` ${username} `,
+      password, confirmPassword: password });
+    const [account] = JSON.parse(localStorage.getItem('writespace_users'));
+    expect(account).toMatchObject({ displayName, username, password, role: 'user' });
+    expect(getUsers()).toEqual([account]);
+    expect(getSession()).toEqual(current);
+    expect(current).toEqual({ userId: account.id, displayName, username, role: 'user' });
+    clearSession();
+    expect(() => login(username, password.trim())).toThrow(/Invalid username or password/);
+    expect(login(username, password)).toEqual(current);
+  });
+
   it.each(['displayName', 'username', 'password', 'confirmPassword'])('requires %s in the service and keeps storage empty', key => {
     try {
       register({ ...fields, [key]: '' });
@@ -189,6 +225,34 @@ describe('registration', () => {
     expect(() => register(fields)).toThrow(/Cannot read local accounts/);
     expect(localStorage.getItem('writespace_users')).toBe(raw);
     expect(getSession()).toBeNull();
+  });
+
+  it.each([
+    ['null record', null],
+    ['missing fields', {}],
+    ...['id', 'displayName', 'username', 'password', 'role', 'createdAt'].map(key => {
+      const invalid = { ...writer, id: 'invalid', username: 'invalid' };
+      delete invalid[key];
+      return [`missing ${key}`, invalid];
+    }),
+    ['invalid role', { ...writer, id: 'invalid', username: 'invalid', role: 'Admin' }],
+    ['invalid timestamp', { ...writer, id: 'invalid', username: 'invalid', createdAt: 'bad' }],
+    ['built-in ID', { ...writer, id: 'admin', username: 'invalid' }],
+    ['built-in username', { ...writer, id: 'invalid', username: 'ADMIN' }],
+    ['duplicate ID', { ...writer, username: 'other' }],
+    ['duplicate username', { ...writer, id: 'other' }],
+    ['case-insensitive duplicate username', { ...writer, id: 'other', username: 'WRITER' }],
+  ])('refuses registration for %s and preserves all prior storage', (_description, invalid) => {
+    login('admin', 'admin');
+    const priorSession = localStorage.getItem('writespace_session');
+    const raw = JSON.stringify([writer, invalid], null, 2);
+    localStorage.setItem('writespace_users', raw);
+    localStorage.setItem('unrelated-data', 'keep me');
+    expect(() => register({ ...fields, username: 'new-writer' })).toThrow(/Cannot read local accounts/);
+    expect(localStorage.getItem('writespace_users')).toBe(raw);
+    expect(localStorage.getItem('writespace_session')).toBe(priorSession);
+    expect(localStorage.getItem('unrelated-data')).toBe('keep me');
+    expect(localStorage.length).toBe(3);
   });
 
   it('does not mutate state on denied reads, UUID failure or account write failure', () => {

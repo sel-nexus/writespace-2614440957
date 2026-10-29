@@ -13,8 +13,8 @@ import PostEditor from './features/posts/PostEditor.jsx';
 import Users from './features/admin/Users.jsx';
 import Dashboard from './features/admin/Dashboard.jsx';
 
-/** Render identity routes and guards; unfinished feature destinations safely return to root.
- * @returns {JSX.Element} The identity application shell.
+/** Render the complete local-first shell with discovery, identity, publishing, and guarded administration routes.
+ * @returns {JSX.Element} The application shell with shared navigation and session-aware route guards.
  */
 export default function App() {
   const [session, setSessionState] = useState(getSession);

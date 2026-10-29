@@ -63,7 +63,17 @@ export default function Login({ session, onSessionChange }) {
           <label htmlFor="login-username" className="font-medium">
             Username
           </label>
-          <input id="login-username" name="username" autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} aria-required="true" aria-invalid={Boolean(errors.username || error)} aria-describedby={errors.username ? 'login-username-error' : error ? 'login-error' : undefined} className={styles.input} />
+          <input
+            id="login-username"
+            name="username"
+            autoComplete="username"
+            value={username}
+            onChange={event => setUsername(event.target.value)}
+            aria-required="true"
+            aria-invalid={Boolean(errors.username || error)}
+            aria-describedby={errors.username ? 'login-username-error' : error ? 'login-error' : undefined}
+            className={styles.input}
+          />
           {errors.username && (
             <p id="login-username-error" role="alert" className={styles.error}>
               {errors.username}
@@ -74,7 +84,18 @@ export default function Login({ session, onSessionChange }) {
           <label htmlFor="login-password" className="font-medium">
             Password
           </label>
-          <input id="login-password" name="password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} aria-required="true" aria-invalid={Boolean(errors.password || error)} aria-describedby={errors.password ? 'login-password-error' : error ? 'login-error' : undefined} className={styles.input} />
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={event => setPassword(event.target.value)}
+            aria-required="true"
+            aria-invalid={Boolean(errors.password || error)}
+            aria-describedby={errors.password ? 'login-password-error' : error ? 'login-error' : undefined}
+            className={styles.input}
+          />
           {errors.password && (
             <p id="login-password-error" role="alert" className={styles.error}>
               {errors.password}

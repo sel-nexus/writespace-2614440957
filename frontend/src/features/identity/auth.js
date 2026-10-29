@@ -47,8 +47,10 @@ function readUsersForWrite() {
   try {
     const raw = localStorage.getItem(USERS_KEY);
     const value = raw === null ? [] : JSON.parse(raw);
-    if (!Array.isArray(value)) throw new Error('Invalid collection');
-    return sanitizeUsers(value);
+    if (!Array.isArray(value) || sanitizeUsers(value).length !== value.length) {
+      throw new Error('Invalid or duplicate accounts');
+    }
+    return value;
   } catch {
     throw new Error('Cannot read local accounts. Enable browser storage or reset corrupt account data.');
   }

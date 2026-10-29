@@ -19,3 +19,8 @@ test_report.yaml
 graphify-out/cache/
 graphify-out/cost.json
 .DS_Store
+ui-evidence/
+ui-evidence.zip
+graphify-out/.graphify*
+graphify-out/GRAPH_REPORT.md
+graphify-out/graph.html

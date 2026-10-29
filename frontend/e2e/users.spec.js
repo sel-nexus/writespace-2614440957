@@ -10,13 +10,14 @@ async function openNavigation(page) {
 /** Follow the actual administrator Users navigation link. */
 async function manageUsers(page) {
   await openNavigation(page);
-  await page.getByRole('navigation').getByRole('link', { name: 'Users', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Users', exact: true }).click();
   await expect(page).toHaveURL(/\/users$/);
 }
 
 /** Log in through the public link and real form. */
 async function login(page, username, password) {
-  await page.getByRole('link', { name: 'Login to WriteSpace' }).click();
+  await openNavigation(page);
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Login', exact: true }).click();
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Login', exact: true }).click();
@@ -117,7 +118,7 @@ test('a non-admin initial Users request redirects without exposing account contr
   await expect(page).toHaveURL(/\/blogs$/);
   await expect(page.getByRole('button', { name: 'Create User' })).toHaveCount(0);
   await openNavigation(page);
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Users', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Users', exact: true })).toHaveCount(0);
   expect(await storedUsers(page)).toEqual([account]);
 });
 

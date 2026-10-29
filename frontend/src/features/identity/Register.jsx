@@ -67,7 +67,18 @@ export default function Register({ session, onSessionChange }) {
             <label htmlFor={`register-${input.name}`} className="font-medium">
               {input.label}
             </label>
-            <input id={`register-${input.name}`} name={input.name} type={input.type} autoComplete={input.autocomplete} value={fields[input.name]} onChange={event => setFields({ ...fields, [input.name]: event.target.value })} aria-required="true" aria-invalid={Boolean(errors[input.name])} aria-describedby={errors[input.name] ? `register-${input.name}-error` : undefined} className={styles.input} />
+            <input
+              id={`register-${input.name}`}
+              name={input.name}
+              type={input.type}
+              autoComplete={input.autocomplete}
+              value={fields[input.name]}
+              onChange={event => setFields({ ...fields, [input.name]: event.target.value })}
+              aria-required="true"
+              aria-invalid={Boolean(errors[input.name])}
+              aria-describedby={errors[input.name] ? `register-${input.name}-error` : undefined}
+              className={styles.input}
+            />
             {errors[input.name] && (
               <p id={`register-${input.name}-error`} role="alert" className={styles.error}>
                 {errors[input.name]}
